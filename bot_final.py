@@ -124,6 +124,7 @@ def run_scanner():
                     df.columns = [str(col).lower() for col in df.columns]
                     check_hammer_rsi_support(df, sym, category, data['interval'])
                 except: continue
+    msg_finish = f"✅ **Scan Selesai** ({datetime.now().strftime('%H:%M')})\nSemua pasar telah dipantau. Belum ada sinyal Hammer/RSI yang cocok saat ini."
     print("--- SCANNING SELESAI ---")
 
 if __name__ == "__main__":
