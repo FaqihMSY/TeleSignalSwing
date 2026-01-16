@@ -47,7 +47,7 @@ def send_telegram(msg):
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
     payload = {'chat_id': TELEGRAM_CHAT_ID, 'text': msg, 'parse_mode': 'Markdown'}
     try:
-        requests.post(url, json=payload, timeout=10)
+        response = requests.post(url, json=payload, timeout=10)
         if response.status_code == 200:
             print(f"✅ Sinyal terkirim ke Telegram untuk: {msg.splitlines()[1]}") 
         else:
@@ -121,7 +121,7 @@ def run_scanner():
                     if df.empty: continue
                     if isinstance(df.columns, pd.MultiIndex):
                         df.columns = df.columns.get_level_values(0)
-                    df.columns = df.columns.str.lower()
+                    df.columns = [str(col).lower() for col in df.columns]
                     check_hammer_rsi_support(df, sym, category, data['interval'])
                 except: continue
     print("--- SCANNING SELESAI ---")
