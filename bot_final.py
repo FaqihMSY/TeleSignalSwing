@@ -125,6 +125,7 @@ def run_scanner():
                     check_hammer_rsi_support(df, sym, category, data['interval'])
                 except: continue
     msg_finish = f"✅ **Scan Selesai** ({datetime.now().strftime('%H:%M')})\nSemua pasar telah dipantau. Belum ada sinyal Hammer/RSI yang cocok saat ini."
+    send_telegram(msg_finish)
     print("--- SCANNING SELESAI ---")
 
 if __name__ == "__main__":
