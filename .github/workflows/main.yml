@@ -23,7 +23,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install "pandas<2.0.0" numpy
           pip install ccxt yfinance requests
-          pip install git+https://github.com/twopirllc/pandas-ta.git@0.3.14b
+          pip install https://files.pythonhosted.org/packages/bb/c3/80bc2842edca9a210574d754bc4989563955d7bc84da699f363bc3ee1d01/pandas_ta-0.3.14b.tar.gz
           
       - name: Run Bot
         env:
