@@ -92,7 +92,7 @@ def run_scanner():
         print(f"Processing Category: {category}")
         
         if data['source'] == 'ccxt':
-            exchange = ccxt.binance()
+            exchange = ccxt.kucoin()
             for sym in data['symbols']:
                 try:
                     bars = exchange.fetch_ohlcv(sym, timeframe=data['interval'], limit=50)
