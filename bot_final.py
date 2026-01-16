@@ -115,3 +115,8 @@ def run_scanner():
                 except: continue
                 
     msg_finish = f"✅ **Scan Selesai** ({datetime.now().strftime('%H:%M')})\nMarket telah dipantau dengan RSI < 40."
+    send_telegram(msg_finish)
+    print("--- SCANNING SELESAI ---")
+
+if __name__ == "__main__":
+    run_scanner()
