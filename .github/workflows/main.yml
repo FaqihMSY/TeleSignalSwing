@@ -1,0 +1,29 @@
+name: Piu Trading Bot Signal
+
+on:
+  schedule:
+    # Berjalan setiap 4 jam (00:00, 04:00, 08:00, dst dalam UTC)
+    - cron: '0 */4 * * *'
+  workflow_dispatch: # Memungkinkan kamu jalankan manual klik tombol
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.9'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Run Bot
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python bot_final.py
