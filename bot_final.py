@@ -10,7 +10,7 @@ from datetime import datetime
 TELEGRAM_TOKEN = os.environ.get('TELEGRAM_TOKEN')
 TELEGRAM_CHAT_ID = os.environ.get('TELEGRAM_CHAT_ID')
 
-RSI_LIMIT = 40  # RSI di bawah 40
+RSI_LIMIT = 40 
 
 ASSETS = {
     'CRYPTO': {
@@ -46,7 +46,7 @@ def send_telegram(msg):
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
     payload = {'chat_id': TELEGRAM_CHAT_ID, 'text': msg, 'parse_mode': 'Markdown'}
     try:
-        response = requests.post(url, json=payload, timeout=10)
+        response = requests.post(url, json=payload, timeout=15)
         if response.status_code == 200:
             print(f"✅ Pesan terkirim ke Telegram") 
         else:
@@ -55,25 +55,21 @@ def send_telegram(msg):
         print(f"Error Telegram: {e}")
 
 def check_hammer_rsi(df, symbol, asset_type, interval):
-    if df is None or len(df) < 20:
+    if df is None or len(df) < 15:
         return
 
-    # Hitung RSI saja
     df['rsi'] = ta.rsi(df['close'], length=14)
     df = df.dropna(subset=['rsi'])
     if df.empty: return
     
     last = df.iloc[-1]
     
-    # 1. Filter RSI di bawah 40
     if last['rsi'] > RSI_LIMIT: return
 
-    # 2. Filter pola Hammer
     body = abs(last['close'] - last['open'])
     lower_shadow = min(last['close'], last['open']) - last['low']
     upper_shadow = last['high'] - max(last['close'], last['open'])
     
-    # Syarat Hammer: Ekor bawah panjang, ekor atas pendek/tidak ada
     is_hammer = (lower_shadow >= 2 * body) and (upper_shadow <= body) and (body > 0)
     
     if is_hammer:
@@ -87,36 +83,42 @@ def check_hammer_rsi(df, symbol, asset_type, interval):
                f"RSI: `{last['rsi']:.2f}`\n"
                f"TF: `{interval}`\n"
                f"Note: Pola Hammer terdeteksi")
-        
         send_telegram(msg)
 
 def run_scanner():
     print(f"--- SCANNING START {datetime.now()} ---")
+    
     for category, data in ASSETS.items():
+        print(f"Processing Category: {category}")
+        
         if data['source'] == 'ccxt':
             exchange = ccxt.binance()
             for sym in data['symbols']:
                 try:
-                    bars = exchange.fetch_ohlcv(sym, timeframe=data['interval'], limit=100)
+                    bars = exchange.fetch_ohlcv(sym, timeframe=data['interval'], limit=50)
                     df = pd.DataFrame(bars, columns=['time', 'open', 'high', 'low', 'close', 'vol'])
                     check_hammer_rsi(df, sym, category, data['interval'])
-                except: continue
+                except Exception as e:
+                    print(f"Error {sym}: {e}")
                 
         elif data['source'] == 'yfinance':
             for sym in data['symbols']:
                 try:
-                    period = "1mo" if "h" in data['interval'] else "6mo"
-                    df = yf.download(sym, period=period, interval=data['interval'], progress=False)
+                    # Ambil data secukupnya saja (1 bulan) agar tidak berat
+                    df = yf.download(sym, period="1mo", interval=data['interval'], progress=False)
                     if df.empty: continue
                     if isinstance(df.columns, pd.MultiIndex):
                         df.columns = df.columns.get_level_values(0)
                     df.columns = [str(col).lower() for col in df.columns]
                     check_hammer_rsi(df, sym, category, data['interval'])
-                except: continue
+                except Exception as e:
+                    print(f"Error {sym}: {e}")
                 
-    msg_finish = f"✅ **Scan Selesai** ({datetime.now().strftime('%H:%M')})\nMarket telah dipantau dengan RSI < 40."
+    # PASTIKAN BAGIAN INI TIDAK MENJOROK KE DALAM LOOPING SAHAM
+    waktu = datetime.now().strftime('%H:%M')
+    msg_finish = f"✅ **Scan Selesai** ({waktu})\nMarket telah dipantau (RSI < 40 + Hammer)."
     send_telegram(msg_finish)
-    print("--- SCANNING SELESAI ---")
+    print(f"--- SCANNING SELESAI PADA {datetime.now()} ---")
 
 if __name__ == "__main__":
     run_scanner()
