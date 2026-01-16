@@ -48,6 +48,10 @@ def send_telegram(msg):
     payload = {'chat_id': TELEGRAM_CHAT_ID, 'text': msg, 'parse_mode': 'Markdown'}
     try:
         requests.post(url, json=payload, timeout=10)
+        if response.status_code == 200:
+            print(f"✅ Sinyal terkirim ke Telegram untuk: {msg.splitlines()[1]}") 
+        else:
+            print(f"❌ Telegram API Error: {response.text}")
     except Exception as e:
         print(f"Error Telegram: {e}")
 
