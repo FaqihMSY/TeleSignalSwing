@@ -1,5 +1,5 @@
 ccxt
 yfinance
-pandas
+pandas<2.0.0
 pandas_ta
 requests
