@@ -64,26 +64,31 @@ def check_hammer_rsi(df, symbol, asset_type, interval):
     
     last = df.iloc[-1]
     
+    # 1. Filter UTAMA: RSI harus di bawah LIMIT (40)
     if last['rsi'] > RSI_LIMIT: return
 
+    # 2. Cek apakah ada Hammer (sebagai info tambahan saja)
     body = abs(last['close'] - last['open'])
     lower_shadow = min(last['close'], last['open']) - last['low']
     upper_shadow = last['high'] - max(last['close'], last['open'])
     
     is_hammer = (lower_shadow >= 2 * body) and (upper_shadow <= body) and (body > 0)
     
-    if is_hammer:
-        price_fmt = f"{last['close']:.2f}" if last['close'] > 1 else f"{last['close']:.6f}"
-        emoji = {"CRYPTO": "🚀", "SAHAM_INDO": "🇮🇩", "SAHAM_US": "🇺🇸", "FOREX": "💱", "GOLD": "🥇"}
-        current_emoji = emoji.get(asset_type, "📈")
-        
-        msg = (f"{current_emoji} **SIGNAL {asset_type}**\n"
-               f"Symbol: `{symbol}`\n"
-               f"Price: `{price_fmt}`\n"
-               f"RSI: `{last['rsi']:.2f}`\n"
-               f"TF: `{interval}`\n"
-               f"Note: Pola Hammer terdeteksi")
-        send_telegram(msg)
+    # Siapkan Pesan
+    price_fmt = f"{last['close']:.2f}" if last['close'] > 1 else f"{last['close']:.6f}"
+    emoji = {"CRYPTO": "🚀", "SAHAM_INDO": "🇮🇩", "SAHAM_US": "🇺🇸", "FOREX": "💱", "GOLD": "🥇"}
+    current_emoji = emoji.get(asset_type, "📈")
+    
+    note = "🔨 Hammer + RSI Rendah" if is_hammer else "📉 RSI di bawah 40 (Oversold)"
+    
+    msg = (f"{current_emoji} **ALERT {asset_type}**\n"
+           f"Symbol: `{symbol}`\n"
+           f"Price: `{price_fmt}`\n"
+           f"RSI: `{last['rsi']:.2f}`\n"
+           f"TF: `{interval}`\n"
+           f"Note: {note}")
+    
+    send_telegram(msg)
 
 def run_scanner():
     print(f"--- SCANNING START {datetime.now()} ---")
@@ -92,7 +97,8 @@ def run_scanner():
         print(f"Processing Category: {category}")
         
         if data['source'] == 'ccxt':
-            exchange = ccxt.kucoin()
+            # Gunakan Kucoin untuk menghindari blokir lokasi Binance di GitHub
+            exchange = ccxt.kucoin() 
             for sym in data['symbols']:
                 try:
                     bars = exchange.fetch_ohlcv(sym, timeframe=data['interval'], limit=50)
@@ -104,7 +110,6 @@ def run_scanner():
         elif data['source'] == 'yfinance':
             for sym in data['symbols']:
                 try:
-                    # Ambil data secukupnya saja (1 bulan) agar tidak berat
                     df = yf.download(sym, period="1mo", interval=data['interval'], progress=False)
                     if df.empty: continue
                     if isinstance(df.columns, pd.MultiIndex):
@@ -114,9 +119,8 @@ def run_scanner():
                 except Exception as e:
                     print(f"Error {sym}: {e}")
                 
-    # PASTIKAN BAGIAN INI TIDAK MENJOROK KE DALAM LOOPING SAHAM
     waktu = datetime.now().strftime('%H:%M')
-    msg_finish = f"✅ **Scan Selesai** ({waktu})\nMarket telah dipantau (RSI < 40 + Hammer)."
+    msg_finish = f"✅ **Scan Selesai** ({waktu})\nSemua pasar telah dipantau."
     send_telegram(msg_finish)
     print(f"--- SCANNING SELESAI PADA {datetime.now()} ---")
 
